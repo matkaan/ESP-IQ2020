@@ -845,7 +845,7 @@ int IQ2020Component::processIQ2020Command() {
 				
 				// Parse current temperature from fixed position (handles leading space for <10°C)
 				char current_temp_str[8];
-				memcpy(current_temp_str, &processingBuffer[94], 4;
+				memcpy(current_temp_str, &processingBuffer[94], 4);
 				current_temp_str[5] = '\0';
 				_current_temp = strtof(current_temp_str, nullptr);
 				if (std::isnan(_current_temp)) _current_temp = 0.0f;

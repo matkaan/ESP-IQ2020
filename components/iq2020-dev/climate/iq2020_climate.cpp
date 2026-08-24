@@ -143,13 +143,15 @@ namespace iq2020_climate {
 			traits.add_supported_preset(climate::ClimatePreset::CLIMATE_PRESET_ECO);
 		}
 
+		// Coolzone can chill the water, so the minimum drops from 80F to 60F.
+		float min_temp = coolzone_ ? 15.5 : 26; // fahrenheit_to_celsius(60) : fahrenheit_to_celsius(80)
 		if (celsius) { // Celsius setup
-			traits.set_visual_min_temperature(26);
+			traits.set_visual_min_temperature(min_temp);
 			traits.set_visual_max_temperature(40);
 			traits.set_visual_target_temperature_step(0.5);
 			traits.set_visual_current_temperature_step(0.5);
 		} else { // Fahrenheit setup
-			traits.set_visual_min_temperature(26); // fahrenheit_to_celsius(80)
+			traits.set_visual_min_temperature(min_temp); // fahrenheit_to_celsius(60/80)
 			traits.set_visual_max_temperature(40); // fahrenheit_to_celsius(104)
 			traits.set_visual_target_temperature_step(1);
 			traits.set_visual_current_temperature_step(1);

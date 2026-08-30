@@ -333,6 +333,8 @@ protected:
 	int number_pending[NUMBERCOUNT]; // Desired state of all numbers
 #endif
 	unsigned long connectionKit = 0; // The time the spa connection kit was last seen
+	int version_poll_count = 0;     // Number of version poll attempts made
+	bool version_polling_done = false; // Stop gating polling on the version string (got it, gave up, or not configured)
 	int got_audio_data = 0;
 	int got_iq_data = 0;
 	bool temp_celsius = false;

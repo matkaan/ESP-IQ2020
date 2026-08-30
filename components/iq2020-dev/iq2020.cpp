@@ -848,10 +848,11 @@ int IQ2020Component::processIQ2020Command() {
 			processingBuffer[cmdlen - 1] = 0;
 			std::string vstr((char*)(processingBuffer + 7));
 			versionstr = vstr;
+			version_polling_done = true;
 #ifdef USE_TEXT_SENSOR
 			if (this->version_sensor_) this->version_sensor_->publish_state(versionstr);
 #endif
-			ESP_LOGD(TAG, "Version: %d", versionstr.c_str());
+			ESP_LOGD(TAG, "Version: %s", versionstr.c_str());
 			pollState();
 		}
 
@@ -880,9 +881,9 @@ int IQ2020Component::processIQ2020Command() {
 		if (((cmdlen == 140) && (processingBuffer[5] == 0x02) && (processingBuffer[6] == 0x56)) || ((cmdlen == 123) && (processingBuffer[5] == 0x02) && (processingBuffer[6] == 0x55))) {
 			// This is the main status data (jets, temperature)
 #ifdef USE_IQ2020_SELECT
-			if (!versionstr.empty() && ((select_state[SELECT_AUDIO_SOURCE] != NOT_SET) || (got_audio_data > 3))) { next_poll = ::millis() + (this->polling_rate_ * 1000); } // Next poll
+			if ((!versionstr.empty() || version_polling_done) && ((select_state[SELECT_AUDIO_SOURCE] != NOT_SET) || (got_audio_data > 3))) { next_poll = ::millis() + (this->polling_rate_ * 1000); } // Next poll
 #else
-			if (!versionstr.empty()) { next_poll = ::millis() + (this->polling_rate_ * 1000); } // Next poll
+			if (!versionstr.empty() || version_polling_done) { next_poll = ::millis() + (this->polling_rate_ * 1000); } // Next poll
 #endif
 
 			// Poll the coolzone heat pump right after our own status poll. When the official Spa Connection
@@ -1550,11 +1551,28 @@ void IQ2020Component::setCoolzoneMode(int mode) {
 
 void IQ2020Component::pollState() {
 	// If we don't have the version string, fetch it now.
-	if (versionstr.empty()) {
-		ESP_LOGD(TAG, "Poll Version");
-		unsigned char cmd[] = { 0x01, 0x00 };
-		sendIQ2020Command(0x01, 0x1F, 0x40, cmd, sizeof(cmd)); // Get version string
-		return;
+	if (versionstr.empty() && !version_polling_done) {
+#ifdef USE_TEXT_SENSOR
+		if (this->version_sensor_ == nullptr) {
+			// Version sensor not configured, don't bother polling for the version.
+			version_polling_done = true;
+		}
+		else if (version_poll_count >= 10) {
+			// Give up after 10 tries and continue with an empty version string.
+			ESP_LOGE(TAG, "Failed to get version after %d tries, continuing without it", version_poll_count);
+			version_polling_done = true;
+		}
+		else {
+			ESP_LOGD(TAG, "Poll Version");
+			version_poll_count++;
+			unsigned char cmd[] = { 0x01, 0x00 };
+			sendIQ2020Command(0x01, 0x1F, 0x40, cmd, sizeof(cmd)); // Get version string
+			return;
+		}
+#else
+		// Text sensors aren't compiled in, so the version can't be configured; skip polling for it.
+		version_polling_done = true;
+#endif
 	}
 
 #ifdef USE_IQ2020_SELECT
